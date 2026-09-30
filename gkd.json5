@@ -1,0 +1,89 @@
+{
+  // 红果免费漫剧(com.kylin.read,独立 App)个人规则 —— GKD 本地订阅「应用规则」格式
+  // 蓝本:baidu0013/hongguo-short-drama-gkd(主 App phoenix.read 版),按本项目 01/02 票研究结论适配
+  //
+  // 【安装位置】GKD 首页 → 订阅 → 本地订阅 → 应用规则 → 粘贴本文件全文并保存
+  //   (注意:不要贴到「全局规则」——那是所有 App 共用的另一套编辑入口,格式不同)
+  // 【维护】改动规则后自己核对选择器;App 改版导致失配时,先抓快照(设置→高级设置→悬浮窗服务)再调
+  id: 'com.kylin.read',
+  name: '红果免费漫剧',
+  author: 'iz123456',
+  groups: [
+    // 组1 是核心:集间广告唯一离开方式是倒计时结束后的上滑。
+    // 触发信号 text^="上滑继续" 天然避开倒计时态(那时文案是"Ns后可继续上滑观看短剧",前缀不符)。
+    // 与蓝本差异:去掉了 activityIds 限制——独立漫剧 App 的短剧 activity 名未采集,
+    // 靠 appId + 文案精确性兜底;若误滑,抓快照后补 activityIds。
+    {
+      key: 1,
+      name: '集间广告-上滑继续',
+      desc: '检测到可见"上滑继续"提示后约1秒自动上滑进下一集;提示仍在则约2秒间隔持续重试,提示消失不执行。倒计时中不会触发。',
+      actionDelay: 1000,
+      actionCd: 1000,
+      fastQuery: true,
+      rules: [
+        {
+          action: 'swipe',
+          swipeArg: {
+            start: {
+              x: 'screenWidth/2',
+              y: 'screenHeight * 0.7',
+            },
+            end: {
+              x: 'screenWidth/2',
+              y: 'screenHeight * 0.3',
+            },
+            duration: 200,
+          },
+          matches: [
+            '[text^="上滑继续"][visibleToUser=true]',
+          ],
+        },
+      ],
+    },
+    // 开屏广告:文案或穿山甲 SDK 自带跳过按钮,两条规则谁命中点谁。
+    // matchTime 10000 + resetMatch 'app' = 只在切进 App 后 10 秒内找,避免误点后文"跳过"。
+    {
+      key: 2,
+      name: '开屏广告-点击跳过',
+      desc: '自动点击[跳过]文字或穿山甲开屏跳过按钮',
+      actionMaximum: 1,
+      matchTime: 10000,
+      resetMatch: 'app',
+      rules: [
+        {
+          matches: [
+            '[text*="跳过"][text.length<10][visibleToUser=true]',
+          ],
+          fastQuery: true,
+        },
+        {
+          matches: [
+            '[id="com.byted.pangle:id/tt_splash_skip_btn"]',
+          ],
+        },
+      ],
+    },
+    // 部分广告素材自带可点按钮(mikesun258/ad_skip 证实 kylin 有此类广告):
+    // [跳过]直接点;[关闭广告]等1.5秒再点(等它变为可点)。
+    {
+      key: 3,
+      name: '广告-点击跳过/关闭广告',
+      desc: '素材带按钮的广告:[跳过]直接点;[关闭广告]延迟1.5秒后点',
+      rules: [
+        {
+          matches: [
+            '[text="跳过"][visibleToUser=true]',
+          ],
+          fastQuery: true,
+        },
+        {
+          matches: [
+            '[text="关闭广告"][visibleToUser=true]',
+          ],
+          actionDelay: 1500,
+          fastQuery: true,
+        },
+      ],
+    },
+  ],
+}
